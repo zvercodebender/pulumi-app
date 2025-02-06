@@ -2,7 +2,7 @@ name: Pulumi-App
 on:
   push:
     tags:
-      - *
+      - '*'
 jobs:
   demo-hello-python-version:
     runs-on: ubuntu-latest
