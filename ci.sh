@@ -9,9 +9,11 @@ fi
 echo "Version = ${TAG}"
 IMAGE="${REPO}:${TAG}"
 
-echo "docker build -t ${IMAGE} -f Dockerfile ."
-docker build -t ${IMAGE} .
+echo "docker build -t ${REPO}:${TAG} -f Dockerfile ."
+docker build -t ${REPO}:${TAG} .
+docker build -t ${REPO}:latest .
 docker login --username $DOCKER_USER --password $DOCKER_PASSWORD docker.io
-echo "docker push ${IMAGE}"
-docker push ${IMAGE}
+echo "docker push ${REPO}:${TAG}"
+docker push ${REPO}:${TAG}
+docker push ${REPO}:latest
 #docker-compose up -d
