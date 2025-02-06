@@ -1,5 +1,6 @@
 export REPO="rbroker/pulumi-lab"
-TAG="$(git rev-parse --short HEAD)"
+#TAG="$(git rev-parse --short HEAD)"
+TAG="${GITHUB_REF#refs/tags/}"
 #export VERSION="3.1.1"
 if [ -z "${TAG}" ]
 then
