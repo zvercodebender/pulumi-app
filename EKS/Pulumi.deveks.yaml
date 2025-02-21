@@ -1,0 +1,5 @@
+config:
+  EKS:cloudName: amazon-east2
+  EKS:planName: basic1
+  EKS:projectName: plumieks
+  EKS:serviceName: kafka-gcp-eu
