@@ -1,10 +1,7 @@
 name: AKS
-description: A minimal Azure Native TypeScript Pulumi program
-runtime:
-  name: nodejs
-  options:
-    packagemanager: npm
+description: A minimal Aiven TypeScript Pulumi program
+runtime: nodejs
 config:
   pulumi:tags:
     value:
-      pulumi:template: azure-typescript
+      pulumi:template: aiven-typescript
