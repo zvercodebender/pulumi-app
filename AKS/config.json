@@ -1,0 +1,13 @@
+{
+    "location": "East US",
+    "resourceGroup": "pulumi-aks-rg",
+    "clusterName": "pulumiAksCluster",
+    "nodeCount": 2,
+    "nodeSize": "Standard_D2_v2",
+    "vnetName": "pulumi-vnet",
+    "subnetName": "pulumi-subnet",
+    "loadBalancerName": "pulumi-lb",
+    "dnsPrefix": "pulumiaks",
+    "message": "Hello from Rick!"
+  }
+  
