@@ -8,6 +8,6 @@
     "subnetName": "pulumi-subnet",
     "loadBalancerName": "pulumi-lb",
     "dnsPrefix": "pulumiaks",
-    "message": "Hello from Rick!"
+    "message": "Hello from Pulumi!"
   }
   

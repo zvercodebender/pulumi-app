@@ -63,7 +63,12 @@ const traefik = new k8sHelm.Chart("traefik", {
     fetchOpts: { repo: "https://traefik.github.io/charts" },
     namespace: "kube-system",
     values: {
-        service: { type: "LoadBalancer" },
+        service: {
+            type: "LoadBalancer",
+            annotations: {
+                "service.beta.kubernetes.io/azure-load-balancer-internal": "false"
+            }
+        },
     },
 }, { provider: k8sProvider });
 
@@ -77,11 +82,23 @@ const traefikExternalIp = traefikService.status.apply(status =>
 // Create public host name
 const ingressHost = traefikExternalIp.apply(ip => `pulumi-lab.${ip}.nip.io`);
 
+// Create a Kubernetes Namespace
+const myNamespace = new k8s.core.v1.Namespace("pulumi-lab", {
+    metadata: {
+        name: "pulumi-lab",  // Change this to your desired namespace name
+    },
+});
+
+// Export the namespace name
+export const namespaceName = myNamespace.metadata.name;
+
 // Deploy Application
 const appLabels = { app: "rbroker-app" };
 
 const deployment = new k8s.apps.v1.Deployment("appDeployment", {
-    metadata: { name: "rbroker-app" },
+    metadata: {    name: "rbroker-app",
+                            namespace: namespaceName
+     },
     spec: {
         replicas: 2,
         selector: { matchLabels: appLabels },
@@ -101,7 +118,8 @@ const deployment = new k8s.apps.v1.Deployment("appDeployment", {
 
 // Service for the app
 const appService = new k8s.core.v1.Service("appService", {
-    metadata: { name: "rbroker-app-service" },
+    metadata: {    name: "rbroker-app-service",
+                            namespace: namespaceName },
     spec: {
         selector: appLabels,
         ports: [{ port: 8080, targetPort: 8080 }], // Updated from 80 to 8080
@@ -112,6 +130,7 @@ const appService = new k8s.core.v1.Service("appService", {
 const ingress = new k8s.networking.v1.Ingress("appIngress", {
     metadata: {
         name: "app-ingress",
+        namespace: namespaceName,
         annotations: { "traefik.ingress.kubernetes.io/router.entrypoints": "web" },
     },
     spec: {
@@ -135,5 +154,10 @@ const ingress = new k8s.networking.v1.Ingress("appIngress", {
 
 // Export Outputs
 export const aksName = aksCluster.name;
-export const kubeConfig = kubeconfig;
+//export const kubeConfig = kubeconfig;
 export const ingressUrl = pulumi.interpolate`http://${ingressHost}/`;
+
+// Write to file
+kubeconfig.apply(config => {
+    fs.writeFileSync("../aks-config", config);
+});
