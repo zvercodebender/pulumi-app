@@ -7,6 +7,9 @@ import * as fs from "fs";
 // Read configuration from JSON file
 const configData = JSON.parse(fs.readFileSync("config.json", "utf-8"));
 
+const resourceGroupName = configData.resourceGroup
+const vnetName = configData.vnetName
+
 // Resource group
 const resourceGroup = new azure.resources.ResourceGroup("resourceGroup", {
     resourceGroupName: configData.resourceGroup,
@@ -15,20 +18,20 @@ const resourceGroup = new azure.resources.ResourceGroup("resourceGroup", {
 
 // Virtual Network & Subnet
 const vnet = new azure.network.VirtualNetwork("vnet", {
-    resourceGroupName: resourceGroup.name,
+    resourceGroupName: resourceGroupName,
     location: resourceGroup.location,
     addressSpace: { addressPrefixes: ["10.0.0.0/16"] },
 });
 
 const subnet = new azure.network.Subnet("subnet", {
-    resourceGroupName: resourceGroup.name,
+    resourceGroupName: resourceGroupName,
     virtualNetworkName: vnet.name,
     addressPrefix: "10.0.1.0/24",
 });
 
 // AKS Cluster
 const aksCluster = new azure.containerservice.ManagedCluster("aksCluster", {
-    resourceGroupName: resourceGroup.name,
+    resourceGroupName: resourceGroupName,
     location: resourceGroup.location,
     dnsPrefix: configData.dnsPrefix,
     agentPoolProfiles: [{
@@ -49,12 +52,19 @@ const aksCluster = new azure.containerservice.ManagedCluster("aksCluster", {
 
 
 // Get kubeconfig
-const kubeconfig = pulumi.all([aksCluster.name, resourceGroup.name]).apply(([clusterName, rgName]) =>
-    azure.containerservice.listManagedClusterUserCredentials({ resourceGroupName: rgName, resourceName: clusterName })
-        .then(creds => Buffer.from(creds.kubeconfigs[0].value, "base64").toString())
+const kubeconfig = aksCluster.name.apply(clusterName =>
+    azure.containerservice.listManagedClusterUserCredentials({ 
+        resourceGroupName: resourceGroupName, 
+        resourceName: clusterName 
+    }).then(creds => Buffer.from(creds.kubeconfigs[0].value, "base64").toString())
 );
+
+
 // Kubernetes Provider
-const k8sProvider = new k8s.Provider("k8sProvider", { kubeconfig });
+const k8sProvider = new k8s.Provider("k8sProvider", { 
+    kubeconfig: kubeconfig.apply(config => config)
+});
+
 
 // Install Traefik via Helm
 const traefik = new k8sHelm.Chart("traefik", {
@@ -83,14 +93,13 @@ const traefikExternalIp = traefikService.status.apply(status =>
 const ingressHost = traefikExternalIp.apply(ip => `pulumi-lab.${ip}.nip.io`);
 
 // Create a Kubernetes Namespace
-const myNamespace = new k8s.core.v1.Namespace("pulumi-lab", {
-    metadata: {
-        name: "pulumi-lab",  // Change this to your desired namespace name
-    },
-});
+const namespace = kubeconfig.apply(() =>
+    new k8s.core.v1.Namespace("pulumiLabNamespace", {
+        metadata: { name: "pulumi-lab" },
+    }, { provider: k8sProvider })
+);
 
-// Export the namespace name
-export const namespaceName = myNamespace.metadata.name;
+export const namespaceName = namespace.metadata.apply(m => m.name);
 
 // Deploy Application
 const appLabels = { app: "rbroker-app" };
