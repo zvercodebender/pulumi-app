@@ -4,7 +4,9 @@ import pulumi_eks as eks
 import pulumi_kubernetes as k8s
 import json
 
-# Load configuration from JSON file
+###############################################
+# Read configuration from JSON file
+#
 with open("config.json", "r") as f:
     config_data = json.load(f)
 
@@ -20,6 +22,9 @@ instance_types = config_data["instance_types"]
 # Set AWS provider region (optional)
 aws_provider = aws.Provider("aws-provider", region=aws_region)
 
+###############################################
+# Configure Cluster
+#
 # Create EKS Cluster 
 eks_cluster = eks.Cluster(eks_cluster_name,
     instance_type=instance_types,  
@@ -51,6 +56,9 @@ namespace = k8s.core.v1.Namespace("pulumi-app-ns",
     opts=pulumi.ResourceOptions(provider=k8s_provider)
 )
 
+#####################################################
+# Deploy Application and Services
+#
 # Define Kubernetes deployment
 app_labels = {"app": "pulumi-lab"}
 deployment = k8s.apps.v1.Deployment("app-deployment",
@@ -98,12 +106,14 @@ service = k8s.core.v1.Service("app-service",
     opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[deployment])  # Ensure Service waits for Deployment
 )
 
-
+#################################################
 # Export outputs
+#
 pulumi.export("kubeconfig", eks_cluster.kubeconfig)
 pulumi.export("eks_cluster_name", eks_cluster.eks_cluster.name)
 pulumi.export("load_balancer_dns", service.status.load_balancer.ingress[0].hostname)
 
+#################################################
 # Function to write kubeconfig to a file
 def write_kubeconfig(kubeconfig):
     with open("../eks-config", "w") as f:

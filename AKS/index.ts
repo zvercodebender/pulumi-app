@@ -4,7 +4,9 @@ import * as k8s from "@pulumi/kubernetes";
 import * as k8sHelm from "@pulumi/kubernetes/helm/v3";
 import * as fs from "fs";
 
-// Read configuration from JSON file
+//*****************************************************************
+//  Read configuration from JSON file
+//  
 const configData = JSON.parse(fs.readFileSync("config.json", "utf-8"));
 
 const resourceGroupName = configData.resourceGroup
@@ -15,7 +17,9 @@ const resourceGroup = new azure.resources.ResourceGroup("resourceGroup", {
     resourceGroupName: configData.resourceGroup,
     location: configData.location,
 });
-
+/***************************************************************
+*   Setup Network
+*/
 // Virtual Network & Subnet
 const vnet = new azure.network.VirtualNetwork("vnet", {
     resourceGroupName: resourceGroupName,
@@ -29,6 +33,9 @@ const subnet = new azure.network.Subnet("subnet", {
     addressPrefix: "10.0.1.0/24",
 });
 
+/*************************************************************
+ *      Configure Cluster
+ */
 // AKS Cluster
 const aksCluster = new azure.containerservice.ManagedCluster("aksCluster", {
     resourceGroupName: resourceGroupName,
@@ -101,6 +108,9 @@ const namespace = kubeconfig.apply(() =>
 
 export const namespaceName = namespace.metadata.apply(m => m.name);
 
+/**********************************************************************
+ * Deploy Application and Services
+ */
 // Deploy Application
 const appLabels = { app: "rbroker-app" };
 
@@ -161,12 +171,15 @@ const ingress = new k8s.networking.v1.Ingress("appIngress", {
     },
 }, { provider: k8sProvider });
 
-// Export Outputs
+/******************************************************
+ *  Export Outputs
+ * 
+ */ 
 export const aksName = aksCluster.name;
 //export const kubeConfig = kubeconfig;
 export const ingressUrl = pulumi.interpolate`http://${ingressHost}/`;
 
-// Write to file
+// Write Kubeconfig to file
 kubeconfig.apply(config => {
     fs.writeFileSync("../aks-config", config);
 });
