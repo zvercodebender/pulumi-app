@@ -8,6 +8,8 @@ import * as fs from "fs";
 //  Read configuration from JSON file
 //  
 const configData = JSON.parse(fs.readFileSync("config.json", "utf-8"));
+const configPulumi = new pulumi.Config("AKS")
+
 
 const resourceGroupName = configData.resourceGroup
 const vnetName = configData.vnetName
@@ -113,22 +115,24 @@ export const namespaceName = namespace.metadata.apply(m => m.name);
  */
 // Deploy Application
 const appLabels = { app: "rbroker-app" };
+const messageText = configPulumi.require("message")
+console.log( "messageText = ~" + messageText + "~" )
 
 const deployment = new k8s.apps.v1.Deployment("appDeployment", {
     metadata: {    name: "rbroker-app",
                             namespace: namespaceName
      },
     spec: {
-        replicas: 2,
+        replicas: 1,
         selector: { matchLabels: appLabels },
         template: {
-            metadata: { labels: appLabels },
+            metadata: { labels: appLabels }, 
             spec: {
                 containers: [{
                     name: "rbroker-app",
                     image: "rbroker/pulumi-lab",
                     ports: [{ containerPort: 8080 }], // Updated from 80 to 8080
-                    env: [{ name: "MESSAGE", value: configData.message }],
+                    env: [{ name: "MESSAGE", value: messageText }],
                 }],
             },
         },

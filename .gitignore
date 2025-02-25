@@ -3,3 +3,4 @@ eks-config
 aks-config
 aws-config
 AKS/node_modules
+Pulumi.*.yaml
