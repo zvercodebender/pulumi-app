@@ -130,7 +130,7 @@ const deployment = new k8s.apps.v1.Deployment("appDeployment", {
             spec: {
                 containers: [{
                     name: "rbroker-app",
-                    image: "rbroker/pulumi-lab",
+                    image: "rbroker/pulumi-lab:latest",
                     ports: [{ containerPort: 8080 }], // Updated from 80 to 8080
                     env: [{ name: "MESSAGE", value: messageText }],
                 }],

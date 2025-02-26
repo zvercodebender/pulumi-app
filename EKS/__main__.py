@@ -10,11 +10,17 @@ import json
 with open("config.json", "r") as f:
     config_data = json.load(f)
 
+# Load Pulumi configuration
+config = pulumi.Config("EKS")
+
+
 # Extract values from config.json
 aws_region = config_data["aws_region"]
 eks_cluster_name = config_data["eks_cluster_name"]
 node_count = config_data["node_count"]
-message = config_data["message"]
+#message = config_data["message"]
+message = config.require("message")  # Required config (throws error if missing)
+print("message = " + message)
 
 # Ensure instance_types is a flat list
 instance_types = config_data["instance_types"]
@@ -74,7 +80,7 @@ deployment = k8s.apps.v1.Deployment("app-deployment",
             spec=k8s.core.v1.PodSpecArgs(
                 containers=[k8s.core.v1.ContainerArgs(
                     name="pulumi-lab",
-                    image="rbroker/pulumi-lab",
+                    image="rbroker/pulumi-lab:latest",
                     env=[k8s.core.v1.EnvVarArgs(
                         name="MESSAGE",
                         value=message
@@ -109,7 +115,7 @@ service = k8s.core.v1.Service("app-service",
 #################################################
 # Export outputs
 #
-pulumi.export("kubeconfig", eks_cluster.kubeconfig)
+#pulumi.export("kubeconfig", eks_cluster.kubeconfig)
 pulumi.export("eks_cluster_name", eks_cluster.eks_cluster.name)
 pulumi.export("load_balancer_dns", service.status.load_balancer.ingress[0].hostname)
 
